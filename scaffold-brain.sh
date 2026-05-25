@@ -338,6 +338,100 @@ coi_expires: 2026-09-30
 - **2026-05-25** | Added as multi-trade GC (paving + concrete).
 MD
 
+seed companies/desert-bloom-landscaping.md <<'MD'
+---
+title: Desert Bloom Landscaping
+type: vendor
+scope: shared
+vendor_type: specialist
+trades: [Landscaping]
+region: [Phoenix AZ]
+coi_expires: pending
+---
+# Desert Bloom Landscaping
+> Marketplace (discovered) landscaping vendor in Phoenix. Self-performs [Landscaping](concepts/landscaping).
+> Not yet verified — COI pending. Surfaced during the Maple Court re-bid.
+
+## Capabilities (per-trade)
+| Trade      | Tier        | Jobs w/ us | Notes |
+|------------|-------------|-----------|-------|
+| Landscaping| marketplace | 0         | unproven; bid biweekly mowing, no seasonal color |
+
+---
+## Timeline
+- **2026-05-25** | Discovered + invited to the Maple Court landscaping RFP.
+MD
+
+seed deals/maple-court-landscaping-2026.md <<'MD'
+---
+title: RFP — Maple Court Landscaping 2026
+type: rfp
+scope: tenant
+status: awarded
+trade: Landscaping
+issued: 2026-05-20
+due: 2026-05-28
+baseline_annual: 48000
+award_annual: 46400
+annual_savings: 1600
+awarded_to: Evergreen Grounds
+---
+# RFP — Maple Court Landscaping 2026
+
+> Annual landscaping re-bid for [Maple Court Apartments](entities/maple-court) (240 units, Phoenix).
+> Three competitive bids. Awarded to [Evergreen Grounds](companies/evergreen-grounds) at $46,400/yr
+> normalized — $1,600/yr (3.3%) below the incumbent baseline — contingent on COI renewal.
+> Lesson: the lowest sticker ([Desert Bloom](companies/desert-bloom-landscaping), $39,600) was the
+> MOST expensive once normalized to equal scope. [Source: compiled, 2026-05-25]
+
+## Scope
+Per [Landscaping](concepts/landscaping) standard scope: weekly in-season mowing/edging, 4 mulch
+cycles, bed weeding, shrub trimming, irrigation checks + repair, seasonal color (2 rotations),
+storm cleanup. Bid form forced line-item pricing + explicit inclusions/exclusions.
+
+## Bids — as quoted vs normalized to EQUAL scope (the apples-to-apples step)
+| Vendor | Tier | As-quoted | Scope gaps plugged | Normalized | $/unit/yr |
+|--------|------|-----------|--------------------|-----------|-----------|
+| [GreenScape Pros](companies/greenscape-pros) (incumbent) | preferred | $48,000 | — full scope | **$48,000** | $200 |
+| [Evergreen Grounds](companies/evergreen-grounds) | approved | $41,400 | +irrigation repair $3,000, +2 mulch cycles $2,000 | **$46,400** | $193 |
+| [Desert Bloom](companies/desert-bloom-landscaping) | marketplace | $39,600 | +weekly mowing $4,800, +seasonal color $1,800, +irrigation $3,000 | **$49,200** | $205 |
+
+## Stack rank (price 40 / scope 25 / track record 20 / schedule-quality 15)
+1. **Evergreen Grounds** — lowest at-parity cost, approved tier, full scope after clarification.
+2. **GreenScape Pros** — proven incumbent, full scope, but $1,600/yr more (the assurance option).
+3. **Desert Bloom** — lowest sticker but highest normalized cost, unproven (0 jobs), COI pending.
+
+## Award + rationale
+Awarded to **[Evergreen Grounds](companies/evergreen-grounds)** at $46,400/yr.
+- **Savings:** $1,600/yr (3.3%) vs the $48,000 incumbent baseline.
+- **Why not Desert Bloom (lowest sticker):** normalized to equal scope it is the MOST expensive,
+  it is unproven, and its COI is pending. Lowest price is not the best deal.
+- **Why not stay with GreenScape:** proven, but $1,600/yr more for the same scope.
+- **Contingency:** conditional on Evergreen renewing its COI (expires 2026-07-15) before start.
+
+## Human-in-the-loop gates (award > $500 threshold)
+- Scope sign-off: PM (recurring service, no engineer needed).
+- Award decision + the savings: regional manager approved.
+- COI renewal: compliance loop auto-requests from Evergreen.
+
+## Benchmark note (antitrust-safe)
+The $193–$205/unit/yr range feeds the AGGREGATED, ANONYMIZED benchmark in the shared layer;
+individual bids stay tenant-private. See [Pricing Intelligence](concepts/pricing-intelligence).
+
+## Open Threads
+- Evergreen COI renewal before contract start (blocking).
+- Evergreen written acceptance of plugged scope at $46,400.
+
+---
+
+## Timeline
+- **2026-05-20** | Issued RFP to GreenScape (incumbent), Evergreen, Desert Bloom (discovered).
+- **2026-05-22** | Site walk completed with all three bidders.
+- **2026-05-26** | Bids in. Desert Bloom excluded irrigation + seasonal color; Evergreen excluded irrigation repair.
+- **2026-05-27** | Leveled to equal scope — Desert Bloom normalized highest despite lowest sticker.
+- **2026-05-28** | Recommended Evergreen; regional manager approved; award contingent on COI renewal.
+MD
+
 echo "==> Indexing"
 gbrain import "$BRAIN_DIR/" --no-embed
 gbrain extract links --source db
