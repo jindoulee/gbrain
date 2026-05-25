@@ -432,6 +432,75 @@ individual bids stay tenant-private. See [Pricing Intelligence](concepts/pricing
 - **2026-05-28** | Recommended Evergreen; regional manager approved; award contingent on COI renewal.
 MD
 
+seed concepts/scoring-policy.md <<'MD'
+---
+title: Bid Scoring Policy
+type: concept
+scope: shared
+status: design-constraint
+---
+# Bid Scoring Policy
+
+> How the [Multifamily Sourcing Agent](concepts/sourcing-agent) decides which bid is best.
+> Four stages: gates -> weighted score -> conversation signal -> human award. Everything is
+> cited; the human owns the weights and the final call; the agent applies and explains.
+
+## Stage 1 — Gates (pass/fail, never traded off)
+Eliminate any bid that fails: valid COI/insurance, required trade license, minimum vendor tier,
+disqualifying financial/lien/safety red flags. A low price NEVER buys off a failed gate.
+
+## Stage 2 — Weighted score (on survivors); weights depend on the trade
+Recurring/commoditized trades weight price; high-stakes capex weights quality + risk.
+
+| Criterion | [Landscaping](concepts/landscaping) (recurring) | High-stakes capex (e.g. roofing) |
+|-----------|------------------------------------------------|----------------------------------|
+| Price (normalized) | 45% | 25% |
+| Track record + quality | 30% | 35% |
+| Reliability / schedule | 15% | 10% |
+| Risk / financial stability | gate | 20% |
+| Warranty / terms | 10% | 10% |
+
+Price is always the NORMALIZED (apples-to-apples) figure — see the Maple Court RFP for the
+plug-the-gaps method. [Asphalt Paving](concepts/asphalt-paving) sits between the two columns.
+
+## Stage 3 — Conversation signal (calls + emails influence the decision)
+Vendor conduct during the bid predicts job performance. It enters three ways:
+- **Binds commitments into the bid** — verbal "we'll include X" / "we start June 1" are captured
+  and pulled into the normalized comparison.
+- **Feeds the weighted criteria** — responsiveness, preparedness, competence = reliability/quality.
+- **Surfaces risk flags** — evasive on COI, over-promising, can't explain method.
+
+Rules: capture -> attribute -> timestamp -> CITE every note. Separate FACT (a binding commitment)
+from INTERPRETATION (a subjective read). The agent surfaces; the human owns the soft judgment.
+Notes live as sourced timeline entries on the vendor AND RFP pages, so a vendor's conduct
+compounds into a cross-RFP reliability track record.
+
+## Stage 4 — Human award
+The agent recommends with a cited rationale (including why-not-the-cheapest). A human approves any
+award over the $500 threshold. Weights are policy (human-owned); scoring is mechanical (agent).
+
+## Where weights are set — default-and-override cascade (most specific wins)
+platform default (per trade) -> corporate/owner policy -> PMC -> region -> property -> this RFP.
+Ship trade defaults so customers start non-blank; each level overrides only what it cares about.
+
+## Cold start
+No performance history day one -> lean on price + gates + tier + external reviews/references;
+the track-record weight grows as job outcomes accrue on vendor pages.
+
+## Antitrust note
+Weighting and benchmarks stay transparent and use aggregated/anonymized data — see
+[Pricing Intelligence](concepts/pricing-intelligence).
+
+## Open Threads
+- Don't over-build config: ship trade defaults + one corporate override, add finer levels on demand.
+- Conversation capture depends on the voice/email layer (vendors live on phone) — riskiest core piece.
+
+---
+
+## Timeline
+- **2026-05-25** | Defined the gates -> weighted -> conversation -> human model and the override cascade.
+MD
+
 echo "==> Indexing"
 gbrain import "$BRAIN_DIR/" --no-embed
 gbrain extract links --source db
