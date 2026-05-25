@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 #
-# scaffold-brain.sh — lays down the starter "multifamily sourcing agent" brain
-# into your GBrain content repo (default ~/brain), then indexes it.
+# scaffold-brain.sh — starter "multifamily sourcing agent" brain for GBrain.
 #
-# Each page is tagged `scope: shared` (platform knowledge that benefits every
-# customer) or `scope: tenant` (a specific customer's private data that must
-# never cross customers). That's the seam you'll later split into GBrain
-# "sources" for multi-tenant isolation.
+# IMPORTANT design note (learned the hard way):
+# GBrain's auto-graph only recognizes a FIXED set of "entity directories"
+# (people, companies, concepts, deals, entities, projects, meetings, …) and
+# only links via EXPLICIT markdown links `[Title](dir/slug)` — not bare prose
+# and not custom directories. So we map the domain onto GBrain's native dirs:
 #
-# Safe to re-run: existing files are left untouched (your edits win).
+#   vendors / PM companies / owners  -> companies/   (distinguished by `type:`)
+#   trades + strategy notes          -> concepts/
+#   properties                       -> entities/
+#   RFP / sourcing events            -> deals/
+#   awarded work                     -> projects/
 #
-# Usage:
-#   ./scaffold-brain.sh                 # uses ~/brain
-#   BRAIN_DIR=~/notes ./scaffold-brain.sh
+# Each page is tagged `scope: shared` (platform knowledge) or `scope: tenant`
+# (a customer's private data) — the seam you later split into GBrain sources.
+#
+# Safe to re-run: existing files are left untouched.
+#
+# Usage:  ./scaffold-brain.sh        (BRAIN_DIR defaults to ~/brain)
 #
 set -euo pipefail
 BRAIN_DIR="${BRAIN_DIR:-$HOME/brain}"
@@ -28,36 +35,40 @@ seed() {  # seed <relative-path> — writes heredoc only if the file doesn't exi
 echo "==> Scaffolding sourcing-agent brain into $BRAIN_DIR"
 mkdir -p "$BRAIN_DIR"
 ( cd "$BRAIN_DIR" && [ -d .git ] || git init -q )
-mkdir -p "$BRAIN_DIR"/{concepts,trades,vendors,properties,pm-companies,owners,rfps,projects,inbox,archive}
+mkdir -p "$BRAIN_DIR"/{concepts,companies,entities,deals,projects,inbox,archive}
 
 seed RESOLVER.md <<'MD'
 # RESOLVER — filing decision tree for the multifamily sourcing brain
 
-Walk this in order. Every page has exactly one home.
+GBrain's graph only links pages in its recognized entity directories, via
+explicit markdown links. So we use GBrain-native dirs and a `type:` field to
+keep domain meaning:
 
-1. A vendor/contractor company → vendors/
-2. A specific apartment property → properties/
-3. A property-management company (end user) → pm-companies/
-4. An ownership group (buyer) → owners/
-5. A trade's scope/spec knowledge (how to scope landscaping, asphalt…) → trades/
-6. A specific sourcing event (RFP + bids + award) → rfps/
-7. Awarded/in-progress work → projects/
-8. Product/strategy thinking, frameworks → concepts/
-9. Don't know yet → inbox/   |   Dead/old → archive/
+| Domain thing                    | Directory   | `type:`         |
+|---------------------------------|-------------|-----------------|
+| Vendor / contractor             | companies/  | vendor          |
+| Property-management company     | companies/  | pm_company      |
+| Ownership group                 | companies/  | owner_group     |
+| Trade scope knowledge           | concepts/   | trade           |
+| Product / strategy / policy     | concepts/   | concept         |
+| Apartment property              | entities/   | property        |
+| RFP / sourcing event            | deals/      | rfp             |
+| Awarded / in-progress work      | projects/   | project         |
 
-Conventions:
+Rules:
 - Two layers per page: compiled truth on top, `---`, append-only Timeline below.
-- Put queryable facts in YAML frontmatter (type, trades, region, tier, coi_expires…).
-- Reference other entities by their exact title so the graph links auto-extract.
-- One page per vendor even if they do many trades (MECE = directories, not reality).
+- Queryable facts go in YAML frontmatter (type, trades, region, tier, coi_expires…).
+- TO CREATE A GRAPH EDGE: write an explicit markdown link `[Title](dir/slug)` in
+  the prose. Bare mentions and non-recognized dirs do NOT link.
+- One page per vendor even if it does many trades (MECE = directories, not reality).
 
 Data-isolation seam — tag every page:
-- `scope: shared`  → platform knowledge all customers benefit from
-                     (trades/, vendors/ directory info, concepts/). Later: a shared source.
-- `scope: tenant`  → a specific customer's private data, never crosses customers
-                     (properties/, pm-companies/, owners/, rfps/). Later: a per-customer source.
-- Vendor *directory* info (exists, trade, region, COI) is shared; a vendor's *bid history
-  and pricing* is tenant-private and lives on rfps/ pages, not the vendor page.
+- `scope: shared`  → platform knowledge all customers benefit from (concepts/, vendor
+                     directory info in companies/). Later: a shared GBrain source.
+- `scope: tenant`  → a customer's private data, never crosses customers (their
+                     properties, PM company, RFPs, awards). Later: a per-customer source.
+- A vendor's *directory* info is shared; its *bid history/pricing* is tenant-private
+  and lives on the deals/ (RFP) page, not the vendor page.
 MD
 
 seed concepts/sourcing-agent.md <<'MD'
@@ -71,34 +82,31 @@ status: thesis
 
 > An agent that helps non-expert on-site multifamily teams run real competitive
 > sourcing for recurring services and capital projects: generate scope, invite
-> vendors, normalize bids apples-to-apples, stack-rank, and produce a cited award
+> vendors, normalize bids apples-to-apples, stack-rank, produce a cited award
 > rationale. Value: drive cost savings, or prove you already have the best deal.
 
 ## State
 - **ICP:** owner-operators & third-party PMs, 5,000–30,000 units. Sell to ownership; end-user is the PM company. [Source: User, 2026-05-25]
 - **PMS:** Yardi, RealPage (read AP/contracts for baseline; write POs back). [Source: User, 2026-05-25]
-- **Starting trades:** Landscaping (recurring) + Asphalt Paving (capex). [Source: compiled, 2026-05-25]
+- **Starting trades:** [Landscaping](concepts/landscaping) (recurring) + [Asphalt Paving](concepts/asphalt-paving) (capex). [Source: compiled, 2026-05-25]
 - **Approval threshold:** $500+ requires human award. [Source: User, 2026-05-25]
 - **Vendor tiers:** marketplace (discovered) → approved (verified) → preferred (proven).
-- **Cross-customer learning:** shared layer (scope templates, anonymized benchmarks, vendor
-  directory) compounds across customers; private layer (bids, awards, spend) never crosses.
-- **Key insight:** value sits at the two ends — scope generation for non-experts, and
-  normalizing messy phone/email/PDF bids — not the leveling in the middle.
+- **Cross-customer learning:** shared layer (scope templates, anonymized benchmarks,
+  vendor directory) compounds across customers; private layer (bids, awards) never crosses.
+- **Pricing features** are gated on antitrust review — see [Pricing Intelligence](concepts/pricing-intelligence).
 
 ## Human-in-the-loop (do not automate)
 - Capex scope sign-off, physical site walks, award decision, contract/legal terms.
 
 ## Open Threads
 - Voice agent (inbound/outbound calls) is the riskiest core piece — vendors live on phone.
-- Call-recording consent handling (two-party-consent states).
+- Call-recording consent (two-party-consent states).
 - Cold-start on savings baseline — first cycle establishes it.
-- Pricing-intelligence features gated on antitrust counsel — see concepts/pricing-intelligence.
 
 ---
 
 ## Timeline
 - **2026-05-25** | User — Defined concept, ICP, trades, threshold, metric.
-- **2026-05-25** | Added cross-customer shared/tenant data model.
 MD
 
 seed concepts/pricing-intelligence.md <<'MD'
@@ -110,50 +118,42 @@ status: design-constraint
 ---
 # Pricing Intelligence — Antitrust Guardrails
 
-> How we surface price guidance without crossing antitrust lines. Anchored to the
-> Nov 2025 DOJ–RealPage settlement: using NONPUBLIC, current competitor data to steer
-> pricing is the violation; aggregated/anonymized HISTORICAL market data is defensible.
+> How we surface price guidance without crossing antitrust lines, for the
+> [Multifamily Sourcing Agent](concepts/sourcing-agent). Anchored to the Nov 2025
+> DOJ–RealPage settlement: using NONPUBLIC, current competitor data to steer pricing
+> is the violation; aggregated/anonymized HISTORICAL market data is defensible.
 > Algorithmic pricing is not inherently illegal. [Source: DOJ–RealPage settlement, 2025-11-24]
 
 ## Two features, two risk profiles
-- **Buyer budget range (PMC-facing) — LOW RISK, build it.** Show an acceptable budget
-  range for a scope from aggregated, anonymized market data. Market intelligence,
-  pro-competitive. Conditions: aggregated, anonymized, min data-point threshold,
-  never "Vendor X bid $Y".
-- **Vendor bid meter (vendor-facing) — CONDITIONAL.** A win-confidence meter is OK ONLY
-  if powered by aggregated HISTORICAL market data, NOT by the live competing bids on the
-  current RFP. The dangerous version tells a vendor "get under $Z to win" where $Z reflects
-  rivals' nonpublic bids — that is the RealPage theory.
+- **Buyer budget range (PMC-facing) — LOW RISK, build it.** Acceptable budget range
+  for a scope from aggregated, anonymized market data. Conditions: aggregated,
+  anonymized, min data-point threshold, never "Vendor X bid $Y".
+- **Vendor bid meter (vendor-facing) — CONDITIONAL.** OK only if powered by aggregated
+  HISTORICAL market data, NOT the live competing bids on the current RFP. The dangerous
+  version tells a vendor "get under $Z to win" where $Z reflects rivals' nonpublic bids.
 
 ## The decisive line
 | Safe (defensible)                       | Dangerous (RealPage theory)                       |
 |-----------------------------------------|---------------------------------------------------|
 | aggregated, anonymized, historical      | competitors' nonpublic, current bids on this RFP  |
 | "market range for this scope is $X–$Y"  | "beat the other bidders by $Z"                    |
-| backward-looking market intelligence    | forward-looking steering on live rival data       |
 
 ## Nuances
-- "It lowers prices" is NOT a safe harbor — shared signals can create a focal point
-  (tacit coordination); the info-exchange theory applies regardless of price direction.
-- DOJ withdrew its old info-sharing "safety zones" (2023) — aggregation is necessary but
-  no longer an automatic safe harbor; counsel sets the thresholds.
-- Supply-side trust: a race-to-the-bottom meter makes vendors disengage. Frame as
-  "price to market," not "we'll squeeze you."
-- Airline upgrade analogy fails: that's ONE seller; here multiple competing vendors,
-  which is exactly where antitrust attaches.
+- "It lowers prices" is NOT a safe harbor — shared signals can create a focal point.
+- DOJ withdrew its info-sharing "safety zones" (2023) — counsel sets thresholds.
+- Supply-side trust: a race-to-the-bottom meter makes vendors disengage.
 
 ## Open Threads
 - MUST get antitrust counsel sign-off before shipping either feature (esp. the meter).
-- Counsel to set: minimum aggregation N, data recency window, anonymization method.
-- Decide minimum data-point threshold before any benchmark is shown.
+- Counsel to set minimum aggregation N, recency window, anonymization method.
 
 ---
 
 ## Timeline
-- **2026-05-25** | Captured antitrust design constraints from RealPage settlement analysis.
+- **2026-05-25** | Captured antitrust constraints from RealPage settlement analysis.
 MD
 
-seed trades/landscaping.md <<'MD'
+seed concepts/landscaping.md <<'MD'
 ---
 title: Landscaping
 type: trade
@@ -162,16 +162,14 @@ category: recurring
 ---
 # Landscaping
 
-> Recurring grounds maintenance. The #1 apples-to-apples trap is scope variance:
-> two bids look different only because mowing frequency / mulch / irrigation differ.
+> Recurring grounds maintenance. #1 apples-to-apples trap is scope variance:
+> two bids differ only because mowing frequency / mulch / irrigation differ.
 
 ## Standard scope line items (force these in every bid form)
-- Mowing & edging — frequency (weekly/biweekly), in-season vs off-season
+- Mowing & edging — frequency, in-season vs off-season
 - Bed maintenance & weeding; mulch — cycles/year, depth, coverage
-- Shrub/hedge trimming — frequency
-- Irrigation checks & repairs — included vs T&M
-- Seasonal color — beds, rotations/year
-- Tree trimming (under X"); leaf/storm cleanup; trash policing
+- Shrub/hedge trimming; irrigation checks (included vs T&M)
+- Seasonal color; tree trimming; leaf/storm cleanup; trash policing
 
 ## Comparability rules
 - Normalize to annual cost AND cost per unit.
@@ -183,7 +181,7 @@ category: recurring
 - **2026-05-25** | Seeded from product analysis.
 MD
 
-seed trades/asphalt-paving.md <<'MD'
+seed concepts/asphalt-paving.md <<'MD'
 ---
 title: Asphalt Paving
 type: trade
@@ -192,19 +190,18 @@ category: capex
 ---
 # Asphalt Paving
 
-> Parking-lot capex. Hard to compare because vendors quote different *methods*
-> for the same lot: seal coat vs mill-and-overlay vs full-depth reconstruction.
+> Parking-lot capex. Hard to compare because vendors quote different *methods*:
+> seal coat vs mill-and-overlay vs full-depth reconstruction. Often bundled with
+> [Concrete](concepts/concrete) (curbs, ADA ramps).
 
 ## Standard scope line items
-- Crack fill (linear ft), seal coat (sq ft, # coats)
+- Crack fill, seal coat (sq ft, # coats)
 - Mill & overlay vs full-depth — specify thickness
-- Striping & restriping; ADA stalls/ramps (code compliance)
-- Patching (sq ft), drainage/ponding fixes
+- Striping & restriping; ADA stalls/ramps (code); patching; drainage
 
 ## Comparability rules
-- Pin the METHOD before comparing price — a seal-coat bid vs an overlay bid is not apples-to-apples.
-- Normalize to cost per sq ft; confirm ADA scope is included.
-- Often bundled with Concrete (curbs, sidewalks, ramps).
+- Pin the METHOD before comparing price (seal-coat vs overlay are not apples-to-apples).
+- Normalize to cost per sq ft; confirm ADA scope included.
 
 ---
 
@@ -212,7 +209,7 @@ category: capex
 - **2026-05-25** | Seeded as capex pilot trade.
 MD
 
-seed trades/concrete.md <<'MD'
+seed concepts/concrete.md <<'MD'
 ---
 title: Concrete
 type: trade
@@ -221,11 +218,11 @@ category: capex
 ---
 # Concrete
 
-> Curbs, sidewalks, ADA ramps, pads. Frequently bundled into parking-lot (Asphalt
-> Paving) projects, so a vendor that does both can bid the whole scope.
+> Curbs, sidewalks, ADA ramps, pads. Frequently bundled into [Asphalt Paving](concepts/asphalt-paving)
+> parking-lot projects, so a vendor that does both can bid the whole scope.
 
 ## Standard scope line items
-- Sidewalk/curb replacement (linear ft), ADA ramp rebuilds (code)
+- Sidewalk/curb replacement, ADA ramp rebuilds (code)
 - Trip-hazard grinding vs replacement; pads/dumpster enclosures
 
 ---
@@ -234,7 +231,7 @@ category: capex
 - **2026-05-25** | Seeded (bundles with Asphalt Paving).
 MD
 
-seed pm-companies/summit-residential.md <<'MD'
+seed companies/summit-residential.md <<'MD'
 ---
 title: Summit Residential
 type: pm_company
@@ -243,29 +240,31 @@ units: 12000
 pms: RealPage
 ---
 # Summit Residential
-> Third-party property manager, ~12,000 units. Pilot customer for the sourcing agent. Runs RealPage.
+> Third-party property manager, ~12,000 units. Pilot customer. Runs RealPage.
+> Manages [Maple Court Apartments](entities/maple-court).
 ---
 ## Timeline
 - **2026-05-25** | Created as pilot ICP example.
 MD
 
-seed properties/maple-court.md <<'MD'
+seed entities/maple-court.md <<'MD'
 ---
 title: Maple Court Apartments
 type: property
 scope: tenant
 units: 240
-managed_by: Summit Residential
 asphalt_sqft: 85000
 ---
 # Maple Court Apartments
-> 240-unit property managed by Summit Residential. Needs recurring Landscaping and an upcoming Asphalt Paving resurfacing.
+> 240-unit property managed by [Summit Residential](companies/summit-residential).
+> Needs recurring [Landscaping](concepts/landscaping) and an upcoming
+> [Asphalt Paving](concepts/asphalt-paving) resurfacing.
 ---
 ## Timeline
 - **2026-05-25** | Created.
 MD
 
-seed vendors/greenscape-pros.md <<'MD'
+seed companies/greenscape-pros.md <<'MD'
 ---
 title: GreenScape Pros
 type: vendor
@@ -276,7 +275,8 @@ region: [Phoenix AZ]
 coi_expires: 2026-11-30
 ---
 # GreenScape Pros
-> Landscaping specialist in Phoenix. Directory info is shared; bid history is tenant-private (lives on rfps/).
+> Landscaping specialist in Phoenix. Self-performs [Landscaping](concepts/landscaping).
+> Directory info is shared; bid history is tenant-private (lives on deals/ pages).
 
 ## Capabilities (per-trade)
 | Trade      | Tier      | Jobs w/ us | Notes |
@@ -288,7 +288,7 @@ coi_expires: 2026-11-30
 - **2026-05-25** | Added as preferred landscaping vendor.
 MD
 
-seed vendors/evergreen-grounds.md <<'MD'
+seed companies/evergreen-grounds.md <<'MD'
 ---
 title: Evergreen Grounds
 type: vendor
@@ -299,7 +299,8 @@ region: [Phoenix AZ]
 coi_expires: 2026-07-15
 ---
 # Evergreen Grounds
-> Landscaping vendor in Phoenix, approved tier. COI expires soon — flag for renewal.
+> Landscaping vendor in Phoenix, approved tier. Self-performs [Landscaping](concepts/landscaping).
+> COI expires soon — flag for renewal.
 
 ## Capabilities (per-trade)
 | Trade      | Tier     | Jobs w/ us | Notes |
@@ -311,7 +312,7 @@ coi_expires: 2026-07-15
 - **2026-05-25** | Added as approved landscaping vendor.
 MD
 
-seed vendors/apex-contracting.md <<'MD'
+seed companies/apex-contracting.md <<'MD'
 ---
 title: Apex Contracting
 type: vendor
@@ -322,8 +323,9 @@ region: [Phoenix AZ, Tucson AZ]
 coi_expires: 2026-09-30
 ---
 # Apex Contracting
-> General contractor in Phoenix/Tucson. Self-performs Asphalt Paving and Concrete, so it
-> can bundle a full parking-lot scope (paving + curbs + ADA ramps) on one award.
+> General contractor in Phoenix/Tucson. Self-performs [Asphalt Paving](concepts/asphalt-paving)
+> and [Concrete](concepts/concrete), so it can bundle a full parking-lot scope
+> (paving + curbs + ADA ramps) on one award.
 
 ## Capabilities (per-trade — track record differs by trade)
 | Trade         | Tier      | Jobs w/ us | Notes |
@@ -343,4 +345,4 @@ gbrain extract timeline --source db
 gbrain embed --stale
 gbrain stats
 
-echo "==> Done. Try:  gb query \"which vendors can bid asphalt paving in Phoenix?\""
+echo "==> Done. Try:  gb graph-query companies/apex-contracting --depth 2"
