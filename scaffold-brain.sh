@@ -3,7 +3,12 @@
 # scaffold-brain.sh — lays down the starter "multifamily sourcing agent" brain
 # into your GBrain content repo (default ~/brain), then indexes it.
 #
-# It is safe to re-run: existing files are left untouched (your edits win).
+# Each page is tagged `scope: shared` (platform knowledge that benefits every
+# customer) or `scope: tenant` (a specific customer's private data that must
+# never cross customers). That's the seam you'll later split into GBrain
+# "sources" for multi-tenant isolation.
+#
+# Safe to re-run: existing files are left untouched (your edits win).
 #
 # Usage:
 #   ./scaffold-brain.sh                 # uses ~/brain
@@ -12,8 +17,7 @@
 set -euo pipefail
 BRAIN_DIR="${BRAIN_DIR:-$HOME/brain}"
 
-# seed <relative-path>  — writes heredoc to the file ONLY if it doesn't exist yet.
-seed() {
+seed() {  # seed <relative-path> — writes heredoc only if the file doesn't exist
   local p="$BRAIN_DIR/$1"
   if [ -f "$p" ]; then echo "skip (exists): $1"; cat >/dev/null; return; fi
   mkdir -p "$(dirname "$p")"
@@ -46,12 +50,21 @@ Conventions:
 - Put queryable facts in YAML frontmatter (type, trades, region, tier, coi_expires…).
 - Reference other entities by their exact title so the graph links auto-extract.
 - One page per vendor even if they do many trades (MECE = directories, not reality).
+
+Data-isolation seam — tag every page:
+- `scope: shared`  → platform knowledge all customers benefit from
+                     (trades/, vendors/ directory info, concepts/). Later: a shared source.
+- `scope: tenant`  → a specific customer's private data, never crosses customers
+                     (properties/, pm-companies/, owners/, rfps/). Later: a per-customer source.
+- Vendor *directory* info (exists, trade, region, COI) is shared; a vendor's *bid history
+  and pricing* is tenant-private and lives on rfps/ pages, not the vendor page.
 MD
 
 seed concepts/sourcing-agent.md <<'MD'
 ---
 title: Multifamily Sourcing Agent
 type: concept
+scope: shared
 status: thesis
 ---
 # Multifamily Sourcing Agent
@@ -67,6 +80,8 @@ status: thesis
 - **Starting trades:** Landscaping (recurring) + Asphalt Paving (capex). [Source: compiled, 2026-05-25]
 - **Approval threshold:** $500+ requires human award. [Source: User, 2026-05-25]
 - **Vendor tiers:** marketplace (discovered) → approved (verified) → preferred (proven).
+- **Cross-customer learning:** shared layer (scope templates, anonymized benchmarks, vendor
+  directory) compounds across customers; private layer (bids, awards, spend) never crosses.
 - **Key insight:** value sits at the two ends — scope generation for non-experts, and
   normalizing messy phone/email/PDF bids — not the leveling in the middle.
 
@@ -77,17 +92,72 @@ status: thesis
 - Voice agent (inbound/outbound calls) is the riskiest core piece — vendors live on phone.
 - Call-recording consent handling (two-party-consent states).
 - Cold-start on savings baseline — first cycle establishes it.
+- Pricing-intelligence features gated on antitrust counsel — see concepts/pricing-intelligence.
 
 ---
 
 ## Timeline
 - **2026-05-25** | User — Defined concept, ICP, trades, threshold, metric.
+- **2026-05-25** | Added cross-customer shared/tenant data model.
+MD
+
+seed concepts/pricing-intelligence.md <<'MD'
+---
+title: Pricing Intelligence — Antitrust Guardrails
+type: concept
+scope: shared
+status: design-constraint
+---
+# Pricing Intelligence — Antitrust Guardrails
+
+> How we surface price guidance without crossing antitrust lines. Anchored to the
+> Nov 2025 DOJ–RealPage settlement: using NONPUBLIC, current competitor data to steer
+> pricing is the violation; aggregated/anonymized HISTORICAL market data is defensible.
+> Algorithmic pricing is not inherently illegal. [Source: DOJ–RealPage settlement, 2025-11-24]
+
+## Two features, two risk profiles
+- **Buyer budget range (PMC-facing) — LOW RISK, build it.** Show an acceptable budget
+  range for a scope from aggregated, anonymized market data. Market intelligence,
+  pro-competitive. Conditions: aggregated, anonymized, min data-point threshold,
+  never "Vendor X bid $Y".
+- **Vendor bid meter (vendor-facing) — CONDITIONAL.** A win-confidence meter is OK ONLY
+  if powered by aggregated HISTORICAL market data, NOT by the live competing bids on the
+  current RFP. The dangerous version tells a vendor "get under $Z to win" where $Z reflects
+  rivals' nonpublic bids — that is the RealPage theory.
+
+## The decisive line
+| Safe (defensible)                       | Dangerous (RealPage theory)                       |
+|-----------------------------------------|---------------------------------------------------|
+| aggregated, anonymized, historical      | competitors' nonpublic, current bids on this RFP  |
+| "market range for this scope is $X–$Y"  | "beat the other bidders by $Z"                    |
+| backward-looking market intelligence    | forward-looking steering on live rival data       |
+
+## Nuances
+- "It lowers prices" is NOT a safe harbor — shared signals can create a focal point
+  (tacit coordination); the info-exchange theory applies regardless of price direction.
+- DOJ withdrew its old info-sharing "safety zones" (2023) — aggregation is necessary but
+  no longer an automatic safe harbor; counsel sets the thresholds.
+- Supply-side trust: a race-to-the-bottom meter makes vendors disengage. Frame as
+  "price to market," not "we'll squeeze you."
+- Airline upgrade analogy fails: that's ONE seller; here multiple competing vendors,
+  which is exactly where antitrust attaches.
+
+## Open Threads
+- MUST get antitrust counsel sign-off before shipping either feature (esp. the meter).
+- Counsel to set: minimum aggregation N, data recency window, anonymization method.
+- Decide minimum data-point threshold before any benchmark is shown.
+
+---
+
+## Timeline
+- **2026-05-25** | Captured antitrust design constraints from RealPage settlement analysis.
 MD
 
 seed trades/landscaping.md <<'MD'
 ---
 title: Landscaping
 type: trade
+scope: shared
 category: recurring
 ---
 # Landscaping
@@ -117,6 +187,7 @@ seed trades/asphalt-paving.md <<'MD'
 ---
 title: Asphalt Paving
 type: trade
+scope: shared
 category: capex
 ---
 # Asphalt Paving
@@ -145,6 +216,7 @@ seed trades/concrete.md <<'MD'
 ---
 title: Concrete
 type: trade
+scope: shared
 category: capex
 ---
 # Concrete
@@ -166,6 +238,7 @@ seed pm-companies/summit-residential.md <<'MD'
 ---
 title: Summit Residential
 type: pm_company
+scope: tenant
 units: 12000
 pms: RealPage
 ---
@@ -180,6 +253,7 @@ seed properties/maple-court.md <<'MD'
 ---
 title: Maple Court Apartments
 type: property
+scope: tenant
 units: 240
 managed_by: Summit Residential
 asphalt_sqft: 85000
@@ -195,13 +269,14 @@ seed vendors/greenscape-pros.md <<'MD'
 ---
 title: GreenScape Pros
 type: vendor
+scope: shared
 vendor_type: specialist
 trades: [Landscaping]
 region: [Phoenix AZ]
 coi_expires: 2026-11-30
 ---
 # GreenScape Pros
-> Landscaping specialist in Phoenix. Currently services Maple Court Apartments for Summit Residential.
+> Landscaping specialist in Phoenix. Directory info is shared; bid history is tenant-private (lives on rfps/).
 
 ## Capabilities (per-trade)
 | Trade      | Tier      | Jobs w/ us | Notes |
@@ -217,13 +292,14 @@ seed vendors/evergreen-grounds.md <<'MD'
 ---
 title: Evergreen Grounds
 type: vendor
+scope: shared
 vendor_type: specialist
 trades: [Landscaping]
 region: [Phoenix AZ]
 coi_expires: 2026-07-15
 ---
 # Evergreen Grounds
-> Landscaping vendor in Phoenix, approved tier. Competes for Summit Residential work. COI expires soon — flag for renewal.
+> Landscaping vendor in Phoenix, approved tier. COI expires soon — flag for renewal.
 
 ## Capabilities (per-trade)
 | Trade      | Tier     | Jobs w/ us | Notes |
@@ -239,6 +315,7 @@ seed vendors/apex-contracting.md <<'MD'
 ---
 title: Apex Contracting
 type: vendor
+scope: shared
 vendor_type: general_contractor
 trades: [Asphalt Paving, Concrete]
 region: [Phoenix AZ, Tucson AZ]
