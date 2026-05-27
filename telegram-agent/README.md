@@ -19,21 +19,26 @@ Telegram  ──>  src/adapters/telegram.ts   (ONLY Telegram-aware code)
 
 ## Setup
 1. In Telegram, message **@BotFather** → `/newbot` → follow prompts → copy the **token**.
-2. From this folder:
+2. From this folder (the bot now answers from the brain, so it needs the Anthropic key too):
    ```bash
    export TELEGRAM_BOT_TOKEN="paste-the-token"
+   export ANTHROPIC_API_KEY="sk-ant-..."   # the bot's own (pay-per-token)
    bun install
    bun start
    ```
-3. Open your bot in Telegram and send any message. You'll get the Maple Court
-   leaderboard with tap buttons:
-   - **Approve Evergreen** → award card.
-   - **Choose another** → GreenScape is selectable (logs an override reason);
-     Desert Bloom is shown **blocked** (no COI — tapping explains why).
+3. Open your bot in Telegram and ask it something about your brain, e.g.
+   *"why didn't we pick the cheapest bid at Maple Court?"* — it retrieves the
+   relevant pages and answers with citations.
+
+> One writer at a time: this bot shells out to `gbrain`, so don't run Claude
+> Code against the same PGLite brain while the bot is running.
 
 ## Roadmap
-- **v1** — replace the canned bodies in `src/core/agent.ts` with a Claude Agent
-  SDK session that connects to the gbrain MCP server and runs `run-rfp`.
+- **v1a (done)** — `src/core/agent.ts` retrieves from gbrain + synthesizes a
+  cited answer via the Claude Messages API. Read-only, brain-grounded.
+- **v1b (next)** — swap the core for a Claude Agent SDK session so it can RUN
+  the run-rfp skill and WRITE back to the brain (the approve buttons then
+  persist awards). Adapter + contracts unchanged.
 - **v1.5** — render the leaderboard as a PNG image (universal across channels).
 - **v2** — add `src/adapters/whatsapp.ts` (field + vendor reach) against the same contract.
 
